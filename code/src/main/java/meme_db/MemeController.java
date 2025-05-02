@@ -33,11 +33,11 @@ public class MemeController {
     public String postMeme(
         @RequestParam String title,
         @RequestParam MultipartFile photo,
-        @RequestParam Set<String> tags
+        @RequestParam String tags
     ) {
 
         try {
-            Meme meme = new Meme(title, tags, photo.getBytes());
+            Meme meme = new Meme(title, tagSet(tags), photo.getBytes());
             memeRepository.save(meme);
 
             return meme.getTitle()+" was added succesfully";
@@ -86,7 +86,7 @@ public class MemeController {
             Set<String> memeTags = meme.getTags();
 
             if (memeTags.containsAll(tagSet)) {
-                photos.add(ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(meme.getImage()));
+                photos.add(ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(meme.getImage()));
             }
         }
 

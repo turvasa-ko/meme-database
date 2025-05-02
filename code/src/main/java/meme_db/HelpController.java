@@ -8,7 +8,8 @@ public class HelpController {
 
     @GetMapping("/help")
     public String help() {
-        return "Welcome to the Meme Database Instructions";
+        return "Welcome to the Meme Database Instructions\n"+
+               "    1. All memes must be .png files";
     }
 
 
