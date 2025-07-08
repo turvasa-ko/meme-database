@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [ 
+    {
+      "type": "java",
+      "name": "Run Meme Database (Maven)",
+      "request": "launch",
+      "mainClass": "code.Main",
+      "projectName": "meme-database",
+      "args": [
+        "keystore.jks", 
+        "ElPsyKongroo"
+      ]
+    }
+  ]
+}
