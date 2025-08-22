@@ -9,6 +9,8 @@ import java.lang.invoke.WrongMethodTypeException;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
+import org.apache.commons.fileupload.MultipartStream;
+
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
@@ -48,6 +50,40 @@ public class HttpExchangeMethods {
 
             // Get the JSON file
             return reader.lines().collect(Collectors.joining("\n"));
+        }
+    }
+
+
+    /**
+    * 
+     * Gets the content of the request while cheking its validity
+     * 
+     * @param  exchange HTTPS request handler
+     * @param  headers HTTPS request and response headers
+     * @return Request content
+     * @throws IOException
+     * @throws WrongMethodTypeException Request's method type is invalid
+     */
+    public MultipartStream getMultipartContent(Headers headers) throws IOException {
+
+        // Check content type validity
+        String contentType = headerContent(headers);
+        if (!contentType.startsWith("multipart/form-data")) {
+            throw new WrongMethodTypeException("Invalid method type. Must be \"multipart/form-data\"");
+        }
+
+        // Check content type boundary
+        int boundaryIndex = contentType.indexOf("boundary=");
+        if (boundaryIndex == -1) {
+            throw new IOException("Missing boundary in Content-Type");
+        }
+
+        // Get reader for stream file
+        try (InputStream inputStream = exchange.getRequestBody()) {
+            String boundary = contentType.substring(boundaryIndex + "boundary=".length()).trim();
+
+            // Get the stream file
+            return new MultipartStream(inputStream, boundary.getBytes(StandardCharsets.UTF_8), 4096, null);
         }
     }
 

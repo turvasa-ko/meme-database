@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <title>
+            Meme Database
+        </title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+
+    <body>
+        <h1>
+            Server Instructions
+        </h1>
+        
+        <!-- Displayed text -->
+        <pre id="helpText">Loading...</pre>
+
+        <!-- Buttons -->
+        <a href="index.html"><button>Home Page</button></a>
+
+        <!-- Functionality -->
+        <script>
+            async function loadHelp() {
+                try {
+                    const response = await fetch("/api/help");
+                    const text = await response.text();
+                    document.getElementById("helpText").innerText = text;
+                } catch (error) {
+                    document.getElementById("helpText").innerText = "Error while fetching instructions";
+                    console.error(error);
+                }
+            }
+
+            loadHelp();
+        </script>
+    
+    </body>
+</html>

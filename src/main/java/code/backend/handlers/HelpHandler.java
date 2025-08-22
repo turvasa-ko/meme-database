@@ -1,6 +1,7 @@
 package code.backend.handlers;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -62,6 +63,11 @@ public class HelpHandler implements HttpHandler {
 
 		// Send response to the server
 		exchange.sendResponseHeaders(200, bytes.length);
+
+        try (OutputStream stream = exchange.getResponseBody()) {
+            stream.write(bytes);
+            stream.flush();
+        }
 	}
   
 }

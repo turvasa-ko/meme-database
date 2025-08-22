@@ -57,8 +57,8 @@ public class Main {
 			// Configure authenticator
 			UserAuthenticator authenticator = new UserAuthenticator(database);
 
-			// Create contexts
-            createCORSContext(server, "/api/mainpage", new ServerHandler());
+			// Create CORS contexts
+            createCORSContext(server, "/api", new ServerHandler());
 			HttpContext help = createCORSContext(server, "/api/help", new HelpHandler());
 			HttpContext registration = createCORSContext(server, "/api/user/registration", new UserHandler(authenticator));
 			HttpContext post = createCORSContext(server, "/api/meme", new MemeHandler(database, allTags));
@@ -143,6 +143,11 @@ public class Main {
 
 	private static HttpContext createCORSContext(HttpServer server, String path, HttpHandler handler) {
 		CORSWrapper corsWrapper = new CORSWrapper(handler);
+
+		// CORS context
 		return server.createContext(path, corsWrapper);
+
+		// Normal context
+		//return server.createContext(path, handler);
 	}
 }

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <title>
+            Meme Database
+        </title>
+        <link rel="stylesheet" href="search.css">
+    </head>
+
+    <body>
+        <h1>
+            Meme Searcher
+        </h1>
+
+        <a href="index.html">Home Page</a>
+
+        <!-- Inputs -->
+        <div>
+            <input id="title" placeholder="Meme Title">
+            <input id="tags" placeholder="Tags (white space separator)">
+            <input id="id" placeholder="Meme ID">
+            
+            <!-- Dropdown sorting type menu -->
+            <div class="dropdown">
+                <button class="dropbutton" id="sortingType">Newest</button>
+                <div class="dropdown-content">
+                    <button onclick="setSort('id')">Oldest</button>
+                    <button onclick="setSort('reverse_id')">Newest</button>
+                    <button onclick="setSort('title')">Alphabetical</button>
+                    <button onclick="setSort('reverse_title')">Alphabetical (inverse)</button>
+                    <button onclick="setSort('likes')">Most Liked</button>
+                    <button onclick="setSort('reverse_likes')">Least Liked</button>
+                </div>
+                </div>
+            </div>
+
+            <button onclick="searchMeme()"><button>Search</button>
+        </div>
+
+        <p id="searchResults">Memes</p>
+
+        <script src="search.js"></script>
+    </body>
+
+</html>

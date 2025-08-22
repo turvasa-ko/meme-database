@@ -1,10 +1,19 @@
 package code.backend.handlers;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.awt.image.BufferedImage;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.imageio.ImageIO;
+
+import org.apache.commons.fileupload.MultipartStream;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -70,10 +79,10 @@ public class MemeHandler implements HttpHandler {
 
             // Content validity check
             Headers headers = exchange.getRequestHeaders();
-            String content = exchangeMethods.getContent(headers);
+            MultipartStream multipartStream = exchangeMethods.getMultipartContent(headers);
 
             // Get the meme from the content
-            Meme meme = new Meme(new JSONObject(content));
+            Meme meme = parseMultipartStream(multipartStream);
 
             // Add meme if its new one
             database.addMeme(meme);
@@ -97,6 +106,73 @@ public class MemeHandler implements HttpHandler {
             exchangeMethods.errorResponse(405, ": " + e.getMessage());
         }
     }
+
+
+    private Meme parseMultipartStream(MultipartStream multipartStream) throws IOException {
+        Meme meme = null;
+        boolean next = multipartStream.skipPreamble();
+
+        while (next) {
+            
+            // Get the data
+            String headers = multipartStream.readHeaders();
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            multipartStream.readBodyData(output);
+            byte[] data = output.toByteArray();
+
+            // Get meme information
+            if (headers.contains("application/json")) {
+                meme = new Meme(getMemeJson(data));
+            }
+
+            // Get the meme file and save it
+            else if (headers.contains("image/")) {
+                saveMemeFile(data, meme);
+            }
+
+            next = multipartStream.readBoundary();
+        }
+
+        // Check the stream validity to prevent future errors
+        if (meme == null) {
+            throw new IllegalArgumentException("The stream must include meme information json and the meme image file.");
+        }
+
+        return meme;
+    }
+
+
+    private JSONObject getMemeJson(byte[] memeJsonBytes) {
+        String memeJsonString = new String(memeJsonBytes, StandardCharsets.UTF_8);
+        return new JSONObject(memeJsonString);
+    }
+
+
+    private void saveMemeFile(byte[] memeFileBytes, Meme meme) throws IOException {
+        if (meme == null) {
+            throw new IllegalArgumentException("The stream must have the meme information json given first.");
+        }
+
+        // Chech image validity
+        if (!isValidImageFile(memeFileBytes)) {
+            throw new IllegalArgumentException("The given file must be a image file");
+        }
+
+        // Save the meme
+        try (FileOutputStream stream = new FileOutputStream(meme.getTitle())) {
+            stream.write(memeFileBytes);
+        }
+    }
+
+    private boolean isValidImageFile(byte[] file) throws IOException {
+        try (InputStream stream = new ByteArrayInputStream(file)) {
+            BufferedImage image = ImageIO.read(stream);
+            return image != null;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
 
 
     private void increaseTagsCount(Set<Tag> tags) throws SQLException {

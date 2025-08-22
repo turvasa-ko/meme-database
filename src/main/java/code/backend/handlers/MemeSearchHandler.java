@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.swing.ImageIcon;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -349,8 +351,17 @@ public class MemeSearchHandler implements HttpHandler {
         JSONArray filteredMemesArray = new JSONArray();
         for (Meme meme: filteredMemes) {
             String fullPath = getFullPath(exchange, meme.getTitle());
-            filteredMemesArray.put(fullPath);
-            System.out.println("    " + fullPath);
+            int[] memeSize = getMemeSizes(fullPath);
+
+            JSONObject memeObject = new JSONObject()
+                .put("path", fullPath)
+                .put("width", memeSize[0])
+                .put("height", memeSize[1])
+                .put("title", meme.getTitle())
+            ;
+
+            filteredMemesArray.put(memeObject);
+            System.out.println("    " + meme.getTitle());
         }
 
         System.out.println("}\n");
@@ -360,6 +371,16 @@ public class MemeSearchHandler implements HttpHandler {
 
     private String getFullPath(HttpExchange exchange, String title) {
         return exchange.getLocalAddress().getHostName()+"/memes/"+title;
+    }
+
+
+    private int[] getMemeSizes(String path) {
+        ImageIcon meme = new ImageIcon(path);
+        int[] size = {0, 0};
+        size[0] = meme.getIconWidth();
+        size[1] = meme.getIconHeight();
+
+        return size;
     }
 
 }
