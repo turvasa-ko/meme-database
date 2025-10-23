@@ -1,10 +1,12 @@
 import json
 import subprocess
+import platform
+from time import sleep
 
 
 launch_json_path = ".vscode/launch.json"
-frontend_path = "\\src\\main\\java\\code\\frontend"
-application_path = "\\src\\main\\java\\code\\app.js"
+frontend_path = "src/main/java/code/frontend"
+application_path = "src/main/java/code/app.js"
 
 
 
@@ -18,20 +20,24 @@ def launch_backend():
     arg_1, arg_2 = configuration.get("args", " ")
     args = arg_1 + " " + arg_2
 
-    backend_command = f"mvn exec:java -Dexec.mainClass='{main_class}' -Dexec.args='{args}'"
-    subprocess.run(backend_command, shell=True, text=True, capture_output=True)
+    backend_command = f"mvn maven:java -Dexec.mainClass='{main_class}' -Dexec.args='{args}'"
+    subprocess.Popen(backend_command, shell=True, text=True)
+    sleep(100/1000) # 100ms
+    print("Backend running")
 
 
 
 def launch_frontend():
-    subprocess.run(f"cd '{frontend_path}'", shell=True, text=True, capture_output=True)
-    frontend_command = "python -m http.server 5500"
+    frontend_command = f"cd '{frontend_path}'" + " && " + "python -m http.server 5500"
+    if platform.system() == "Windows":
+        frontend_command.replace("&&", "&")
+    subprocess.Popen(frontend_command, shell=True, text=True)
+    sleep(100/1000) # 100ms
+    print("Frontend running")
+
     application_comand = f"npx electron {application_path}"
-
-    subprocess.run(frontend_command, shell=True, text=True, capture_output=True)
-    subprocess.run(application_comand, shell=True, text=True, capture_output=True)
-
-    print("Shrek")
+    subprocess.Popen(application_comand, shell=True, text=True)
+    print("Application running")
 
 
 
