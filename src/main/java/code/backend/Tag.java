@@ -1,12 +1,8 @@
 package code.backend;
 
-import java.sql.SQLException;
-
 import org.json.JSONObject;
 
-import code.backend.Database;
-
-public class Tag implements Comparable<Tag> {
+public class Tag {
 
 
     private String title;
@@ -64,38 +60,6 @@ public class Tag implements Comparable<Tag> {
     @Override
     public String toString() {
         return title;
-    }
-
-
-    
-    
-    @Override
-    public int compareTo(Tag other) {
-        int titleComparasion = title.compareTo(other.getTitle());
-        int countComparasion = count.compareTo(other.getCount());
-
-        if (titleComparasion != 0) return titleComparasion;
-        if (countComparasion != 0) return countComparasion;
-
-        return 0;
-    }
-    
-
-    @Override
-    public boolean equals(Object other) {
-
-        if (this == other) return true;
-        if (other == null) return false;
-        if (this.getClass() != other.getClass()) return false;
-
-        Tag otherTag = (Tag) other;
-        return title.equals(otherTag.getTitle());
-    }
-
-
-    @Override
-    public int hashCode() {
-        return title.hashCode();
     }
 
 }

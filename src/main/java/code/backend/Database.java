@@ -9,20 +9,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.commons.codec.digest.Crypt;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import code.backend.tag_comparators.TagTitleComparator;
 import code.backend.user.User;
-import jakarta.json.JsonArray;
 
 
 public class Database {
