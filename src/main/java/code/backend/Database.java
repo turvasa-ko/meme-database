@@ -22,6 +22,7 @@ import org.json.JSONObject;
 
 import code.backend.tag_comparators.TagTitleComparator;
 import code.backend.user.User;
+import jakarta.json.JsonArray;
 
 
 public class Database {
@@ -47,7 +48,7 @@ public class Database {
 
         // Create users table
         String userTable =  "CREATE TABLE IF NOT EXISTS User (" +
-                                "username varchar(50) NOT NULL, " +
+                                "name varchar(50) NOT NULL, " +
                                 "user TEXT NOT NULL, " +
                                 "id INTEGER PRIMARY KEY AUTOINCREMENT" +
                             ")";
@@ -55,18 +56,16 @@ public class Database {
         // Create tags table
         String tagsTable =  "CREATE TABLE IF NOT EXISTS Tag (" +
                                 "title VARCHAR(20) NOT NULL UNIQUE, " +
-                                "count INTEGER NOT NULL, " +
                                 "id INTEGER PRIMARY KEY AUTOINCREMENT" +
                             ")"; 
         
         // Create memes table
         String memesTable =  "CREATE TABLE IF NOT EXISTS Meme (" +
                                 "title VARCHAR(50) NOT NULL UNIQUE, " +
-                                "tagCount INTEGER NOT NULL, " +
                                 "likes INTEGER NOT NULL, " +
-                                "userId INTEGER NOT NULL, " +
+                                "username TEXT NOT NULL, " +
                                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                                "FOREING KEY (userId) REFERENCES User(id)" +
+                                "FOREING KEY (username) REFERENCES User(name)" +
                              ")";
 
         // Create hasTag table
@@ -75,6 +74,7 @@ public class Database {
                             "memeId INTEGER NOT NULL, " +
                             "FOREING KEY (tagId) REFERENCES Tag(id) ON DELETE CASCADE" +
                             "FOREING KEY (  memeID) REDERENCES Meme(id) ON DELETE CASCADE" +
+                            "UNIQUE (tagId, memeId)" +
                         ")";
                                 
         // Add all tables to database
@@ -103,7 +103,7 @@ public class Database {
 
             // Create new user
             JSONObject defaultUser = new JSONObject();
-            defaultUser.put("username", "u");
+            defaultUser.put("name", "u");
             defaultUser.put("password", "p");
             defaultUser.put("email", "el.psy@kongroo.com");
             defaultUser.put("nickname", "Tatteus");
@@ -167,7 +167,7 @@ public class Database {
     private boolean isRegistered(String username) throws SQLException {
 
         // Set the SQL command
-        String command = "SELECT COUNT(*) FROM User WHERE username = ?";
+        String command = "SELECT COUNT(*) FROM User WHERE name = ?";
         
         // Get the count of given users in the table
         try (PreparedStatement statement = connection.prepareStatement(command)) {
@@ -199,7 +199,7 @@ public class Database {
         String encryptedUser = encryptedUser(user);
 
         // Set the SQL command
-        String command = "INSERT INTO User(username, user) VALUES(?, ?)";
+        String command = "INSERT INTO User(name, user) VALUES(?, ?)";
 
         // Send user's credentials to database
         try (PreparedStatement statement = connection.prepareStatement(command)) {
@@ -235,7 +235,7 @@ public class Database {
 
         // Create new encrypted user JSON string with
         JSONObject encryptedUser = new JSONObject();
-        encryptedUser.put("username", userObj.getString("username"));
+        encryptedUser.put("name", userObj.getString("name"));
         encryptedUser.put("password", encryptedPassword);
         encryptedUser.put("email", userObj.getString("email"));
         encryptedUser.put("nickname", userObj.getString("nickname"));
@@ -274,7 +274,7 @@ public class Database {
     private JSONObject getUser(String username) throws SQLException, IllegalArgumentException {
 
         // Set the SQL command
-        String command = "SELECT user FROM User WHERE username = ?";
+        String command = "SELECT user FROM User WHERE name = ?";
 
         // Get the given user from users table
         try (PreparedStatement statement = connection.prepareStatement(command)) {
@@ -307,38 +307,43 @@ public class Database {
 
 
     /**
-     * Add tag to the database
+     * Add new tag to the database. If the given tag isn't unique, nothing happens.
      * 
      * @param tag Tag to be added
      */
-    public void addTag(Tag tag) throws SQLException {
+    public void addNewTag(Tag tag) throws SQLException {
 
         // Set the SQL command
-        String command = "INSERT INTO Tag(title, count) VALUES(?, ?)";
+        String command = "INSERT INTO Tag(title) VALUES(?)";
 
         // Send the tag to the database
         try (PreparedStatement statement = connection.prepareStatement(command)) {
             statement.setString(1, tag.getTitle());
-            statement.setInt(2, tag.getCount());
 
             statement.executeUpdate();
+        }
+
+        // If the tag is already added, then continue
+        catch (SQLException e) {
+            if (!e.getMessage().contains("UNIQUE constraint failed")) {
+                throw new SQLException(e.getMessage());
+            }
         }
     }
 
 
-/*
     /**
-     * Gets all tags from the database
+     * Gets all tags from the database as JSON array. If any tags haven't found the set is empty.
      * 
-     * @return All tags as BST set. If any tags haven't found the set is empty
-     *
-    public TreeSet<Tag> getTagSet() throws SQLException {
+     * @return All tags as JSON array
+     */
+    public JSONArray getTagArray() throws SQLException {
 
-        // Create new tag set
-        TreeSet<Tag> tagSet = new TreeSet<>(new TagTitleComparator());
+        // Create new JSON array
+        JSONArray tagArray = new JSONArray();
 
         // Set SQL command
-        String command = "SELECT title, count FROM tags";
+        String command = "SELECT title FROM tags";
 
         // Seek all tags
         try (PreparedStatement statement = connection.prepareStatement(command)) {
@@ -349,101 +354,37 @@ public class Database {
 
                     // Create tag
                     String title = tags.getString("title");
-                    int count = tags.getInt("count");
+                    int count = getMemeTagCount(title);
                     Tag tag = new Tag(title, count);
 
                     // Add the tag to the set
-                    tagSet.add(tag);
+                    tagArray.put(tag.toJSONString());
                 }                
             }
         }
 
-        return tagSet;
-    }
-*/
-
-
-    /**
-     * Gets 
-     * 
-     * @param memeId
-     * @return
-     * @throws SQLException
-     */
-    private JSONArray getMemeTags(int memeId) throws SQLException {
-        JSONArray tags = new JSONArray();
-
-        // Set SQL command
-        String command = 
-            "SELECT UNIQUE title, count" +
-            "FROM Tag" +
-            "JOIN HasTag ON Tag.id = HasTag.tagId" +
-            "JOIN Meme" + 
-            "WHERE HasTag.memeId = ?";
-
-        // Seek the meme and tags links
-        try (PreparedStatement statement = connection.prepareStatement(command)) {
-            statement.setInt(1, memeId);
-            try (ResultSet tagSet = statement.executeQuery()) {
-
-                // Iterate the found tags
-                while (tagSet.next()) {
-
-                    // Create tag JSON
-                    JSONObject tag = new JSONObject();
-                    tag.put("title", tagSet.getString("title"));
-                    tag.put("count", tagSet.getString("count"));
-
-                    // Add to the array
-                    tags.put(tag);
-                }
-            }
-        }
-
-        return tags;
+        return tagArray;
     }
 
 
     /**
-     * Updates the increase (by 1) of the given tag's count to the database
+     * Deletes the given tag from the database
      * 
-     * @param tag
+     * @param tagTitle Tag to be deleted
      */
-    public void increaseTagCount(Tag tag) throws SQLException {
+    public void deleteTag(String tagTitle) throws SQLException {
 
         // Set SQL command
-        String command = 
-            "UPDATE Tag " + 
-            "SET count = count + 1 " +
+        String command =
+            "DELETE FROM Tag" +
             "WHERE title = ?"
         ;
 
-        // Update the count increasing
+        // Delete tag
         try (PreparedStatement statement = connection.prepareStatement(command)) {
-            statement.setString(1, tag.getTitle());
-            statement.executeUpdate();            
-        }
-    }
+            statement.setString(1, tagTitle);
 
-
-    /**
-     * Updates the decrease (by 1) of the given tag's count to the database
-     * 
-     * @param tag
-     */
-    public void decreaseTagCount(Tag tag) throws SQLException {
-
-        // Set SQL command
-        String command = 
-            "UPDATE Tag " +
-            "SET count = count - 1 " +
-            "WHERE title = ? AND count > 0"
-        ;
-
-        // Update the count decreasing
-        try (PreparedStatement statement = connection.prepareStatement(command)) {
-            statement.setString(1, tag.getTitle());
-            statement.executeUpdate();            
+            statement.executeUpdate();
         }
     }
 
@@ -467,10 +408,8 @@ public class Database {
 
         // Set SQL command
         String command = 
-            "INSERT INTO Meme(title, likes, userId) " +
-            "VALUES(?, ?, User.id)" +
-            "FROM User" +
-            "WHERE User.username = ?"
+            "INSERT INTO Meme(title, likes, username) " +
+            "VALUES(?, ?, ?)"
         ;
 
         // Send the meme to the database
@@ -490,8 +429,12 @@ public class Database {
             throw e;
         }
 
-        // Link the meme and the tags
+        // Iterate all tags
         for (Tag tag: meme.getTagsSet()) {
+            // Add tag to the database, if it's new
+            addNewTag(tag);
+
+            // Link the meme and the tag
             addTagOfTheMeme(meme, tag);
         }
     }
@@ -614,7 +557,7 @@ public class Database {
      * @param tagSet Tags used for the search
      * @return List of the founded memes
      */
-    public List<Meme> getMemesByTags(Set<Tag> tagSet) throws SQLException {
+    public List<Meme> getMemesByTags(List<Tag> tagSet) throws SQLException {
         List<Meme> memeSet = new ArrayList<>();
 
         String placeHolders = new String();
@@ -632,7 +575,8 @@ public class Database {
             "JOIN HasTag AS ht ON m.id = ht.memeId" +
             "JOIN Tag AS t ON ht.tagId = t.id" +
             "WHERE t.title IN (" + placeHolders + ")" +
-            "GROUP BY m.id";
+            "GROUP BY m.id"
+        ;
 
         // Seek all memes
         try (PreparedStatement statement = connection.prepareStatement(command)) {
@@ -666,33 +610,117 @@ public class Database {
 
 
     /**
-     * Edits the given meme
+     * Edits the given meme and/or its tags
      * 
-     * @param meme Meme to be edited (has possily the new tags)
+     * @param meme Meme to be edited (has possily the new title and/or tags)
      * @param newTitle New title for the meme, NULL if don't need editing
      * @return The pre-edited meme 
      * @throws IllegalArgumentException Given meme does n't exist in the database
      */
-    public void editMeme(Meme meme, String newTitle) throws SQLException {
+    public void editMeme(Meme meme, String newTitle, String username) throws SQLException {
+
+        // Edit tags
+        for (Tag tag: meme.getTagsSet()) {
+            if (tag != null && tag.getTitle() != null) {
+                editMemeTags(tag, meme.getTitle(), username);
+            }
+        }
+
+        // Edit title
+        if (newTitle != null && newTitle != meme.getTitle()) {
+            editMemeTitle(meme, newTitle, username);
+        }
+    }
+
+
+    /**
+     * Adds the tag to the database, if the given user is the uploader of the meme. Only new tags are added.
+     * 
+     * @param  tag Tag to be added
+     * @param  memeTitle Title of the meme
+     * @param  username Uploader's username
+     */
+    private void editMemeTags(Tag tag, String memeTitle, String username) throws SQLException {
+
+        // Set SQL exception
+        String command = 
+            "INSERT INTO HasTag(tagId, memeID)" + 
+            "VALUES(Tag.id, Meme.id)"+
+            "JOIN Tag" +
+            "JOIN Meme" +
+            "WHERE Tag.title = ? AND Meme.title = ? AND MEME.username = ?"
+        ;
+
+        // Add tag
+        try (PreparedStatement statement = connection.prepareStatement(command)) {
+            statement.setString(1, tag.getTitle());
+            statement.setString(2, memeTitle);
+            statement.setString(3, username);
+
+            statement.executeUpdate();
+        }
+
+        // Don't throw error if the tag isn't unique
+        catch (SQLException e) {
+            if (!e.getMessage().contains("UNIQUE constraint failed")) {
+                throw new SQLException(e.getMessage());
+            }
+        }
+    }
+
+
+    /**
+     * Edits memes title, if the given user is the uploader of the meme.
+     * 
+     * @param  meme Meme to be edited
+     * @param  newTitle New title of the meme
+     * @param  username Uploader's name
+     */
+    private void editMemeTitle(Meme meme, String newTitle, String username) throws SQLException {
         try {
 
             // Set the SQL command
-            String command = "UPDATE memes SET tags = ?, title = ? WHERE title = ?";
+            String command = 
+                "UPDATE memes" +
+                "SET title = ?" +
+                "WHERE title = ? AND username = ?"
+            ;
 
-            // Update the tags
+        // Update the tags
             try (PreparedStatement statement = connection.prepareStatement(command)) {
-                statement.setString(1, meme.getTagsJsonString());
-                if (newTitle != null) statement.setString(2, newTitle);
-                statement.setString(3, meme.getTitle());
+                statement.setString(1, newTitle);
+                statement.setString(2, meme.getTitle());
+                statement.setString(3, username);
 
                 statement.executeUpdate();
             }
-
-            jkKKkkkkkkkkkkkk
         }
 
         catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(": Meme must exist before it can be edited.");
+        }
+    }
+
+
+    /**
+     * Delete the given meme from the database. The given user must be the uploader of the meme.
+     * 
+     * @param  memeTitle Meme to be deleted
+     * @param  username Uploader's name
+     */
+    public void deleteMeme(String memeTitle, String username) throws SQLException {
+
+        // Set SQL command
+        String command =
+            "DELETE FROM Meme" +
+            "WHERE title = ? AND username = ?"
+        ;
+
+        try (PreparedStatement statement = connection.prepareStatement(command)) {
+            statement.setString(1, memeTitle);
+            statement.setString(2, username);
+
+            statement.executeUpdate();
         }
     }
 
@@ -716,9 +744,8 @@ public class Database {
 
         // Set SQL command
         String command = 
-            "INSERT INTO Tag (tagId, memeId)" +
-                "Tag.id, " +
-                "Meme.id§" +
+            "INSERT INTO Tag(tagId, memeId)" +
+            "VALUES(Tag.id, Meme.id)" +
             "FROM Tag" +
             "JOIN Meme" +
             "WHERE" +
@@ -736,6 +763,108 @@ public class Database {
     }
 
 
+    /**
+     * Gets all tags of the given meme
+     * 
+     * @param  memeId ID of the meme
+     * @return Tags JSON array
+     */
+    private JSONArray getMemeTags(int memeId) throws SQLException {
+        JSONArray tags = new JSONArray();
 
+        // Set SQL command
+        String command = 
+            "SELECT UNIQUE title" +
+            "FROM Tag" +
+            "JOIN HasTag ON Tag.id = HasTag.tagId" +
+            "JOIN Meme" + 
+            "WHERE HasTag.memeId = ?"
+        ;
+
+        // Seek the meme and tags links
+        try (PreparedStatement statement = connection.prepareStatement(command)) {
+            statement.setInt(1, memeId);
+            try (ResultSet tagSet = statement.executeQuery()) {
+
+                // Iterate the found tags
+                while (tagSet.next()) {
+                    String memeTitle = tagSet.getString("title");
+
+                    // Create tag JSON
+                    JSONObject tag = new JSONObject();
+                    tag.put("title", memeTitle);
+                    tag.put("count", getMemeTagCount(memeTitle));
+
+                    // Add to the array
+                    tags.put(tag);
+                }
+            }
+        }
+
+        return tags;
+    }
+
+
+    /**
+     * Gets the tag count of the given meme
+     * 
+     * @param  memeTitle Title of the meme
+     * @return Tag count
+     * @throws SQLException
+     */
+    private int getMemeTagCount(String memeTitle) throws SQLException {
+
+        // Set SQl command
+        String command =
+            "SELECT COUNT(*) FROM HasTag" +
+            "WHERE memeId = ?"
+        ;
+
+        // Get the tag count
+        try (PreparedStatement statement = connection.prepareStatement(command)) {
+            statement.setString(1, memeTitle);
+            try (ResultSet tagCount = statement.executeQuery()) {
+                while (tagCount.next()) {
+                    return tagCount.getInt(1);
+                }
+            }
+        }
+
+        // Return 0, if something fails
+        return 0;
+    }
+
+
+    /**
+     * Deletes the given tag from the meme
+     * 
+     * @param  memeTitle Title of the meme
+     * @param  tagTitle Tag to be deleted
+     * @throws SQLException
+     */
+    public void deleteMemeTag(String memeTitle, String tagTitle) throws SQLException {
+
+        // Set SQL command
+        String command = 
+            "DELETE FROM HasTag" +
+            "WHERE " +
+                "tagId = (" +
+                    "SELECT id FROM Tag" +
+                    "WHERE title = ?" +
+                ") AND " +
+                "memeId = (" +
+                    "SELECT id FROM Meme" +
+                    "WHERE title = ?" +
+                ")"
+        ;
+
+        // Delete the tag
+        try (PreparedStatement statement = connection.prepareStatement(command)) {
+            statement.setString(1, tagTitle);
+            statement.setString(2, memeTitle);
+
+            statement.executeUpdate();
+        }
+    }
 
 }

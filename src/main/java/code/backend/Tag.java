@@ -2,6 +2,8 @@ package code.backend;
 
 import java.sql.SQLException;
 
+import org.json.JSONObject;
+
 import code.backend.Database;
 
 public class Tag implements Comparable<Tag> {
@@ -49,17 +51,12 @@ public class Tag implements Comparable<Tag> {
 
 
 
-    public void increaseCount(Database database) throws SQLException {
-        this.count++;
-        database.increaseTagCount(this);
-    }
+    public JSONObject toJSONString() {
+        JSONObject tagJSON = new JSONObject();
+        tagJSON.put("title", title);
+        tagJSON.put("count", count);
 
-
-    public void decreaseCount(Database database) throws SQLException {
-        if (count > 0) {
-            this.count--;
-            database.decreaseTagCount(this);
-        }
+        return tagJSON;
     }
 
 

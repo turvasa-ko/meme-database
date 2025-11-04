@@ -50,9 +50,6 @@ public class Main {
 			// Create database
 			Database database = Database.open("memes.db");
 
-			// Load the database to memory
-			TreeSet<Tag> allTags = database.getTagSet();
-
 			// Configure authenticator
 			UserAuthenticator authenticator = new UserAuthenticator(database);
 
@@ -60,8 +57,8 @@ public class Main {
             createCORSContext(server, "/api", new ServerHandler());
 			HttpContext help = createCORSContext(server, "/api/help", new HelpHandler());
 			HttpContext registration = createCORSContext(server, "/api/user/registration", new UserHandler(authenticator));
-			HttpContext post = createCORSContext(server, "/api/meme", new MemeHandler(database, allTags));
-			HttpContext search = createCORSContext(server, "/api/meme/search", new MemeSearchHandler(database, allTags));
+			HttpContext post = createCORSContext(server, "/api/meme", new MemeHandler(database));
+			HttpContext search = createCORSContext(server, "/api/meme/search", new MemeSearchHandler(database));
 
 			// Set authenticators
 			help.setAuthenticator(null);

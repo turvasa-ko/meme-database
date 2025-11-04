@@ -6,9 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.swing.ImageIcon;
 
@@ -34,8 +32,6 @@ public class MemeSearchHandler implements HttpHandler {
 
     private final Database database;
 
-    private final Set<Tag> allTags;
-
 
 
 
@@ -44,9 +40,8 @@ public class MemeSearchHandler implements HttpHandler {
     *
     * @param database Database of the server
     */
-    public MemeSearchHandler(Database database, Set<Tag> allTags) {
+    public MemeSearchHandler(Database database) {
         this.database = database;
-        this.allTags = allTags;
     }
 
 
@@ -93,12 +88,11 @@ public class MemeSearchHandler implements HttpHandler {
 
             // Get search details from the query
             String[] variables = getVariables(exchange);
-            String title = (variables[0] != null) ? variables[0].toLowerCase() : null;
-            int id = (variables[1] != null) ? Integer.parseInt(variables[1]) : -1;
+            String sortingQuerry = variables[0].toLowerCase();
             SORT_TYPE sortingType = getMemeSortType(variables[2]);
 
             // Corresponding memes array
-            JSONArray memePaths = filterMemes(exchange, title, id, tagsArray, sortingType);
+            JSONArray memePaths = filterMemes(exchange, sortingQuerry, sortingType);
 
             // No memes found
             if (memePaths.isEmpty()) {
@@ -128,7 +122,7 @@ public class MemeSearchHandler implements HttpHandler {
      * Gets all parameters from the query. If parameter is not given, it's set to NULL
      * 
      * @param  exchange HTTPS reguest handler
-     * @return [title, id, sortingTypeString]
+     * @return [querry, sortingTypeString]
      * @throws NullPointerException If there are no variables given
      */
     private String[] getVariables(HttpExchange exchange) {
@@ -161,14 +155,11 @@ public class MemeSearchHandler implements HttpHandler {
             // Check what variable it is
             switch (keyValue[0]) {
 
-                // Title of the meme
-                case "title" -> variableValues[0] = setVariable(keyValue);
-
-                // ID of the meme
-                case "id" -> variableValues[1] = setVariable(keyValue);
+                // Search querry
+                case "searc_querry" -> variableValues[0] = setVariable(keyValue);
 
                 // Sorting type
-                case "sorting_type" -> variableValues[2] = setVariable(keyValue);
+                case "sorting_type" -> variableValues[1] = setVariable(keyValue);
             }
         }
         return variableValues;
@@ -197,10 +188,7 @@ public class MemeSearchHandler implements HttpHandler {
     }
 
     private SORT_TYPE getMemeSortType(String sortType) {
-
-        if (sortType == null) {
-            return SORT_TYPE.ID;
-        }
+        if (sortType == null) return SORT_TYPE.ID;
 
         switch (sortType.toLowerCase()) {
             case "id" -> {return SORT_TYPE.ID;}
@@ -216,118 +204,82 @@ public class MemeSearchHandler implements HttpHandler {
 
 
 
-    private JSONArray filterMemes(HttpExchange exchange, String title, int id, JSONArray tags, SORT_TYPE sortingType) throws SQLException {
+    private JSONArray filterMemes(HttpExchange exchange, String sortingQuerry, SORT_TYPE sortingType) throws SQLException {
         boolean isFiltered = false;
         List<Meme> filteredMemes = new ArrayList<>();
 
-        // Filter title
-        if (title != null) {
-            filterTitle(filteredMemes, title);
+        // Querry is valid ID
+        if (isValidID(sortingQuerry)) {
+            findByID(filteredMemes, Integer.parseInt(sortingQuerry));
             isFiltered = true;
         }
 
-        System.out.println("Tags");
+        // Query is string
+        else if (sortingQuerry != null) {
 
-        // Filter ID
-        if (id != -1) {
-            filterId(filteredMemes, id, isFiltered);
+            // Find memes
+            findByTitle(filteredMemes, sortingQuerry);
+            findByTags(filteredMemes, sortingQuerry);
+    
             isFiltered = true;
         }
-
-        System.out.println("ID");
-
-        // Filter with tags
-        if (tags != null) {
-            filterTags(filteredMemes, tags, isFiltered);
-            isFiltered = true;
-        }
-
-        // Return the found memes as json array
-        if (isFiltered) {
-            return sortedMemeArray(exchange, filteredMemes, sortingType);
-        } else {
-            return sortedMemeArray(exchange, database.getMemesList(), sortingType);
-        }
-    }
-
-
-
-
-    private void filterTitle(List<Meme> currentMemes, String title) throws SQLException {
-        currentMemes.add(database.getMemeByTitle(title));
-    }
-
-
-
-
-    private void filterId(List<Meme> currentMemes, int id, boolean isFiltered) throws SQLException {
-
-        // First filtering
-        if (!isFiltered) {
-            currentMemes.add(database.getMemeById(id));
-            return;
-        }
-
-        // Iterate the current memes
-        List<Meme> memesToBeRemoved = new ArrayList<>();
-        for (Meme meme: currentMemes) {
-
-            // Find non-corresponding memes
-            if (meme.getID() != id) {
-                memesToBeRemoved.add(meme);
-            }
-        } 
         
-        // Remove non-corresponding memes
-        currentMemes.removeAll(memesToBeRemoved);
-    }
-
-
-
-
-    private void filterTags(List<Meme> currentMemes, JSONArray tagsArray, boolean isFiltered) throws SQLException {
-        Set<Tag> tags = getTagSet(tagsArray);
-
-        // First filtering, so seek from all memes
+        // Return the found memes as json array
         if (!isFiltered) {
-            currentMemes.addAll(database.getMemesByTags(tags));
+            filteredMemes = database.getMemesList();
         }
 
-        // Previous filters haven't filtered out everything
-        else if (!currentMemes.isEmpty()) {
-            for (Meme meme: currentMemes) {
+        return sortedMemeArray(exchange, filteredMemes, sortingType);
 
-                // Add all corresponding memes
-                if (meme.containsTags(tags)) {
-                    currentMemes.add(meme);
-                }
-            }
-        }
-   }
-
-
-    private Set<Tag> getTagSet(JSONArray tagsArray) {
-
-        // Iterate all tags
-        Set<Tag> tags = new HashSet<>();
-        for (int i = 0; i < tagsArray.length(); i++) {
-
-            // Get the title of the tag
-            JSONObject tagJson = tagsArray.getJSONObject(i);
-            String title = tagJson.optString("title", "Title not provided");
-
-            // Only valid tags are used
-            Tag tag = new Tag(title, 0);
-            if (!allTags.contains(tag)) {
-                continue;
-            }
-
-            // Add the valid tag to the set
-            tags.add(new Tag(title, 0));
-        }
-
-        return tags;
     }
+
+
+    private boolean isValidID(String str) {
+        try {
+            // Is Integer
+            Integer id = Integer.parseInt(str);
+
+            // Is positive
+            if (id >= 0) {
+                return true;
+            }
+            else return false;
+        }
+
+        catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+
+    private void findByID(List<Meme> currentMemes, int id) throws SQLException {
+        currentMemes.addAll(database.getMemeById(id));
+    }
+
+
+    private void findByTitle(List<Meme> currentMemes, String title) throws SQLException {
+      currentMemes.addAll(database.getMemesContainingTitle(title)); 
+    }
+
+
+    private void findByTags(List<Meme> currentMemes, String querry) throws SQLException {
+        List<Tag> tagList = new ArrayList<>();
+        String[] tags = querry.split(" ");
+
+        // Parse the tags from the querry
+        for (String tagStr: tags) {
+            tagList.add(new Tag(tagStr, 0));
+        } 
+
+        // Add non-dublicant memes
+        List<Meme> foundMemes = database.getMemesByTags(tagList);
+        for (Meme meme: foundMemes) {
+            if (!currentMemes.contains(meme)) {
+                currentMemes.add(meme);
+            }
+        }
+    }
+
 
 
     private JSONArray sortedMemeArray(HttpExchange exchange, List<Meme> filteredMemes, SORT_TYPE sortingType) {

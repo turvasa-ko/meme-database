@@ -8,12 +8,11 @@ import java.io.InputStream;
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.Set;
-import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
 
 import org.apache.commons.fileupload.MultipartStream;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,20 +23,17 @@ import com.sun.net.httpserver.HttpHandler;
 import code.backend.Database;
 import code.backend.HttpExchangeMethods;
 import code.backend.Meme;
-import code.backend.Tag;
 
 
 public class MemeHandler implements HttpHandler {
 
     private final Database database;
-    private final TreeSet<Tag> allTags;
 
 
 
 
-    public MemeHandler(Database database, TreeSet<Tag> allTags) {
+    public MemeHandler(Database database) {
         this.database = database;
-        this.allTags = allTags;
     }
 
 
@@ -48,13 +44,15 @@ public class MemeHandler implements HttpHandler {
         HttpExchangeMethods exchangeMethods = new HttpExchangeMethods(exchange, "[ERROR] - POST");
 
         try (exchange) {
-            exchangeMethods.checkUserValidity();
+            String username = exchangeMethods.checkUserValidity();
             String method = exchange.getRequestMethod().toUpperCase();
 
             switch (method) {
-                case "POST" -> postRequest(exchange, exchangeMethods);
+                case "POST" -> postRequest(exchange, exchangeMethods, username);
 
-                case "PUT" -> putRequest(exchange, exchangeMethods);
+                case "PUT" -> putRequest(exchange, exchangeMethods, username);
+
+                case "DELETE" -> deleteRequest(exchange, exchangeMethods, username);
                 
                 default -> exchangeMethods.errorResponse(405, ": Unsupported post method\n");
             }
@@ -75,7 +73,7 @@ public class MemeHandler implements HttpHandler {
 
 
 
-    private void postRequest(HttpExchange exchange, HttpExchangeMethods exchangeMethods) {
+    private void postRequest(HttpExchange exchange, HttpExchangeMethods exchangeMethods, String username) {
         try {
 
             // Content validity check
@@ -86,13 +84,7 @@ public class MemeHandler implements HttpHandler {
             Meme meme = parseMultipartStream(multipartStream);
 
             // Add meme if its new one
-            database.addMeme(meme);
-
-            // Chech if meme contains new tags
-            meme.checkForNewTags(allTags, database);
-
-            // Increase tags' count
-            increaseTagsCount(meme.getTags());
+            database.addMeme(meme, username);
 
             // Send success message
             exchange.sendResponseHeaders(200, -1);
@@ -165,6 +157,7 @@ public class MemeHandler implements HttpHandler {
         }
     }
 
+
     private boolean isValidImageFile(byte[] file) throws IOException {
         try (InputStream stream = new ByteArrayInputStream(file)) {
             BufferedImage image = ImageIO.read(stream);
@@ -176,15 +169,6 @@ public class MemeHandler implements HttpHandler {
 
 
 
-    private void increaseTagsCount(Set<Tag> tags) throws SQLException {
-        for (Tag tag: tags) {
-            allTags.floor(tag).increaseCount(database);
-        }
-    }
-
-
-
-
 
 // ▛              ▜
 //    PUT Request 
@@ -192,7 +176,7 @@ public class MemeHandler implements HttpHandler {
 
 
 
-    private void putRequest(HttpExchange exchange, HttpExchangeMethods exchangeMethods) {
+    private void putRequest(HttpExchange exchange, HttpExchangeMethods exchangeMethods, String username) {
          try {
             // Content validity check
             Headers headers = exchange.getRequestHeaders();
@@ -203,13 +187,7 @@ public class MemeHandler implements HttpHandler {
             Meme meme = new Meme(memeJson);
 
             // Edit the meme if it exists
-            Meme previousMeme = database.editMeme(meme, memeJson.optString("newTitle", null));
-
-            // Edit the count of the tags
-            changeTagCounts(meme, previousMeme);
-
-            // Chech if meme contains new tags
-            meme.checkForNewTags(allTags, database);
+            database.editMeme(meme, memeJson.optString("newTitle", null), username);
 
             // Send success message
             exchange.sendResponseHeaders(200, -1);
@@ -231,30 +209,40 @@ public class MemeHandler implements HttpHandler {
 
 
 
-    private void changeTagCounts(Meme newMeme, Meme currentMeme) throws SQLException {
-        increaseNewTagsCount(newMeme, currentMeme);
-        decreaseOldTagsCount(newMeme, currentMeme);
-    }
+
+// ▛                  ▜
+//    DELETE Request 
+// ▙                  ▟
 
 
-    private void increaseNewTagsCount(Meme newMeme, Meme currentMeme) throws SQLException {
-        // Find new tags added to the meme (that aren't entirely new)
-        for (Tag tag: newMeme.getTags()) {
-           
-            if (!currentMeme.getTags().contains(tag) && allTags.contains(tag)) {
-                tag.increaseCount(database);
+
+    private void deleteRequest(HttpExchange exchange, HttpExchangeMethods exchangeMethods, String username) {
+        try {
+            //Content validity check
+            Headers headers = exchange.getRequestHeaders();
+            String content = exchangeMethods.getContent(headers);
+
+            // Get meme and/or tag to be deleted
+            JSONObject contentJSON = new JSONObject(content);
+            String memeTitle = contentJSON.optString("memeTitle");
+            JSONArray tagArray = contentJSON.optJSONArray("tagTitle");
+
+            if (memeTitle != null) {
+                database.deleteMeme(memeTitle, username);
+    
+                for (int i = 0; i < tagArray.length(); i++) {
+
+                }
             }
+        }
+
+        catch (IOException | SQLException e) {
+            exchangeMethods.errorResponse(406, ": " + e.getMessage());
+        }
+
+        catch (JSONException e) {
+            exchangeMethods.errorResponse(405, e.getMessage());
         }
     }
 
-
-    private void decreaseOldTagsCount(Meme newMeme, Meme currentMeme) throws SQLException {
-        // Find new tags added to the meme (that aren't entirely new)
-        for (Tag tag: currentMeme.getTags()) {
-           
-            if (!newMeme.getTags().contains(tag) && allTags.contains(tag)) {
-                tag.decreaseCount(database);
-            }
-        }
-    }
 }
