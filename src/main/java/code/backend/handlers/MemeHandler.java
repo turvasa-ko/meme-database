@@ -2,12 +2,15 @@ package code.backend.handlers;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -28,12 +31,13 @@ import code.backend.Meme;
 public class MemeHandler implements HttpHandler {
 
     private final Database database;
+    private final Map<String, String> sessions;
 
 
 
-
-    public MemeHandler(Database database) {
+    public MemeHandler(Database database, Map<String, String> sessions) {
         this.database = database;
+        this.sessions = sessions;
     }
 
 
@@ -41,10 +45,10 @@ public class MemeHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        HttpExchangeMethods exchangeMethods = new HttpExchangeMethods(exchange, "[ERROR] - POST");
+        HttpExchangeMethods exchangeMethods = new HttpExchangeMethods(exchange, "[ERROR] - POST: ");
 
         try (exchange) {
-            String username = exchangeMethods.checkUserValidity();
+            String username = exchangeMethods.checkUserValidity(sessions);
             String method = exchange.getRequestMethod().toUpperCase();
 
             switch (method) {
@@ -80,11 +84,17 @@ public class MemeHandler implements HttpHandler {
             Headers headers = exchange.getRequestHeaders();
             MultipartStream multipartStream = exchangeMethods.getMultipartContent(headers);
 
+            System.out.println("Valid content");
+
             // Get the meme from the content
             Meme meme = parseMultipartStream(multipartStream);
 
+            System.out.println("Meme found and saved");
+
             // Add meme if its new one
             database.addMeme(meme, username);
+
+            System.out.println("Meme added to the database");
 
             // Send success message
             exchange.sendResponseHeaders(200, -1);
@@ -103,9 +113,13 @@ public class MemeHandler implements HttpHandler {
 
     private Meme parseMultipartStream(MultipartStream multipartStream) throws IOException {
         Meme meme = null;
-        boolean next = multipartStream.skipPreamble();
+        boolean next = true; // multipartStream.skipPreamble();
+
+        System.out.println("Next created");
 
         while (next) {
+
+            System.out.println("Has next");
             
             // Get the data
             String headers = multipartStream.readHeaders();
@@ -113,14 +127,18 @@ public class MemeHandler implements HttpHandler {
             multipartStream.readBodyData(output);
             byte[] data = output.toByteArray();
 
+            System.out.println("Data found");
+
             // Get meme information
             if (headers.contains("application/json")) {
                 meme = new Meme(getMemeJson(data));
+                System.out.println("Meme info found");
             }
 
             // Get the meme file and save it
             else if (headers.contains("image/")) {
                 saveMemeFile(data, meme);
+                System.out.println("Image saved");
             }
 
             next = multipartStream.readBoundary();
@@ -146,19 +164,37 @@ public class MemeHandler implements HttpHandler {
             throw new IllegalArgumentException("The stream must have the meme information json given first.");
         }
 
-        // Chech image validity
-        if (!isValidImageFile(memeFileBytes)) {
-            throw new IllegalArgumentException("The given file must be a image file");
-        }
+        // Chech image validity and get its
+        String memeType = getMemeFileType(memeFileBytes);
+
+        // Check the memes directory
+        File memesDirectory = new File("memes");
+        if (!memesDirectory.exists()) memesDirectory.mkdirs();
 
         // Save the meme
-        try (FileOutputStream stream = new FileOutputStream(meme.getTitle())) {
+        File memeFile = new File(memesDirectory + "/" + meme.getTitle() + memeType);
+        try (FileOutputStream stream = new FileOutputStream(memeFile)) {
             stream.write(memeFileBytes);
         }
     }
 
 
-    private boolean isValidImageFile(byte[] file) throws IOException {
+    private String getMemeFileType(byte[] file) {
+
+        // Check that the file is image
+        if (!isValidImageFile(file)) {
+            throw new IllegalArgumentException("The given file must be an image file");
+        }
+
+        // Get the type (GIF or PNG)
+        if (file[0] == 0x47 && file[1] == 0x49 && file[2] == 0x46 && file[3] == 0x38) {
+            return ".gif";
+        }
+        return ".png";
+    }
+
+
+    private boolean isValidImageFile(byte[] file) {
         try (InputStream stream = new ByteArrayInputStream(file)) {
             BufferedImage image = ImageIO.read(stream);
             return image != null;
@@ -168,6 +204,7 @@ public class MemeHandler implements HttpHandler {
     }
 
 
+    
 
 
 // ▛              ▜
@@ -225,16 +262,11 @@ public class MemeHandler implements HttpHandler {
             // Get meme and/or tag to be deleted
             JSONObject contentJSON = new JSONObject(content);
             String memeTitle = contentJSON.optString("memeTitle");
-            JSONArray tagArray = contentJSON.optJSONArray("tagTitle");
 
-            if (memeTitle != null) {
-                database.deleteMeme(memeTitle, username);
-    
-                for (int i = 0; i < tagArray.length(); i++) {
-
-                }
-            }
-        }
+            // Delete the meme
+            database.deleteMeme(memeTitle, username);
+            deleteMemeFile(memeTitle);
+       }
 
         catch (IOException | SQLException e) {
             exchangeMethods.errorResponse(406, ": " + e.getMessage());
@@ -242,6 +274,22 @@ public class MemeHandler implements HttpHandler {
 
         catch (JSONException e) {
             exchangeMethods.errorResponse(405, e.getMessage());
+        }
+    }
+
+
+    private void deleteMemeFile(String memeTitle) {
+
+        // Delete PNG file
+        try {
+            File memeFile = new File("memes/" + memeTitle + ".png");
+            memeFile.delete();
+        }
+
+        // Delete GIF file
+        catch (Exception e) {
+            File memeFile = new File("memes/" + memeTitle + ".gif");
+            memeFile.delete();
         }
     }
 

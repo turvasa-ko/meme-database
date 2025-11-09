@@ -4,6 +4,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -22,11 +24,12 @@ import com.sun.net.httpserver.HttpsServer;
 
 import code.backend.CORS.CORSWrapper;
 import code.backend.handlers.HelpHandler;
+import code.backend.handlers.LoginHandler;
 import code.backend.handlers.MemeHandler;
 import code.backend.handlers.MemeSearchHandler;
 import code.backend.handlers.ServerHandler;
 import code.backend.handlers.TagHandler;
-import code.backend.handlers.UserHandler;
+import code.backend.handlers.RegistrationHandler;
 import code.backend.user.UserAuthenticator;
 
 public class Main {
@@ -52,19 +55,22 @@ public class Main {
 
 			// Configure authenticator
 			UserAuthenticator authenticator = new UserAuthenticator(database);
+			Map<String, String> sessions = new HashMap<>();
 
 			// Create CORS contexts
             createCORSContext(server, "/api", new ServerHandler());
 			HttpContext help = createCORSContext(server, "/api/help", new HelpHandler());
-			HttpContext registration = createCORSContext(server, "/api/user/registration", new UserHandler(authenticator));
-			HttpContext post = createCORSContext(server, "/api/meme", new MemeHandler(database));
+			HttpContext registration = createCORSContext(server, "/api/user/registration", new RegistrationHandler(authenticator));
+			HttpContext login = createCORSContext(server, "/api/user/login", new LoginHandler(database, sessions));
+			HttpContext post = createCORSContext(server, "/api/meme", new MemeHandler(database, sessions));
 			HttpContext search = createCORSContext(server, "/api/meme/search", new MemeSearchHandler(database));
 			HttpContext tag = createCORSContext(server, "/api/tag", new TagHandler(database));
 
 			// Set authenticators
 			help.setAuthenticator(null);
 			registration.setAuthenticator(null);
-			post.setAuthenticator(authenticator);
+			login.setAuthenticator(null);
+			post.setAuthenticator(null);
 			search.setAuthenticator(null);
 			tag.setAuthenticator(null);
 

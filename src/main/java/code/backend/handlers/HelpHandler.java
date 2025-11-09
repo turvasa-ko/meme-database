@@ -54,7 +54,7 @@ public class HelpHandler implements HttpHandler {
 
 
 	/**
-    * Handles the POST method
+    * Handles the GET method
     *
     * @param  exchange HTTP request hadler
     */

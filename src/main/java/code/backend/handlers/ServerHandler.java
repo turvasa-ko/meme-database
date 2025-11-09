@@ -15,7 +15,7 @@ public class ServerHandler implements HttpHandler {
 
     private static final String SERVER_MESSAGE = 
         """
-            Hello, Welcome to the Meme Database!
+        Hello, Welcome to the Meme Database!
         """
     ;
 

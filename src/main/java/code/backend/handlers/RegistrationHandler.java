@@ -3,6 +3,9 @@ package code.backend.handlers;
 import java.io.IOException;
 import java.lang.invoke.WrongMethodTypeException;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -11,14 +14,14 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import code.backend.Database;
 import code.backend.HttpExchangeMethods;
 import code.backend.user.UserAuthenticator;
 
-public class UserHandler implements HttpHandler {
+public class RegistrationHandler implements HttpHandler {
 
 
     private final UserAuthenticator authenticator;
-
 
 
 
@@ -27,7 +30,7 @@ public class UserHandler implements HttpHandler {
     *
     * @param  authenticator Users authenticator for checking user's authentication
     */
-    public UserHandler(UserAuthenticator authenticator) {
+    public RegistrationHandler(UserAuthenticator authenticator) {
         this.authenticator = authenticator;
     }
 

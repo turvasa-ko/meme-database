@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.invoke.WrongMethodTypeException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.fileupload.MultipartStream;
@@ -80,7 +82,12 @@ public class HttpExchangeMethods {
 
         // Get reader for stream file
         try (InputStream inputStream = exchange.getRequestBody()) {
+
+            // Get content length boundary
             String boundary = contentType.substring(boundaryIndex + "boundary=".length()).trim();
+            if (boundary.startsWith("\"") && boundary.endsWith("\"")) {
+                boundary = boundary.substring(1, boundary.length() - 1);
+            }
 
             // Get the stream file
             return new MultipartStream(inputStream, boundary.getBytes(StandardCharsets.UTF_8), 4096, null);
@@ -114,17 +121,51 @@ public class HttpExchangeMethods {
     /**
     * Gets username from authentication query
     *
-    * @param  exchange HTTPS request hadler
+    * @param  sessions Session map holding the usernames
     * @return User's username string
-    * @return User's username
     * @throws SecurityException If given user is not registered 
     */
-    public String checkUserValidity() {
+    public String checkUserValidity(Map<String, String> sessions) {
         if (exchange.getPrincipal() == null) {
-            throw new SecurityException("User isn't authenticated\n");
+            return checkSessiosIdValidity(sessions);
         }
 
         return exchange.getPrincipal().getUsername();
+    }
+
+
+    /**
+     * Gets username from the sessions with the given session ID
+     * 
+     * @param  sessions Session map holding the usernames
+     * @return User's username string
+     * @throws SecurityException If the session ID is invalid
+     */
+    private String checkSessiosIdValidity(Map<String, String> sessions) {
+        List<String> cookiesHeader = exchange.getRequestHeaders().get("Cookie");
+
+        if (cookiesHeader == null) {
+            throw new SecurityException("User isn't authenticated\n");
+        }
+
+        // Iterate cookie header
+        for (String header: cookiesHeader) {
+            String[] cookies = header.split(";");
+            
+            // Check all cookies
+            for (String cookie: cookies) {
+                String[] cookiePair = cookie.split("=");
+                String key = cookiePair[0];
+                String value = cookiePair[1];
+
+                // Check the session ID alidity
+                if (key.equals("sessionId") && sessions.containsKey(value)) {
+                    return sessions.get(value);
+                }
+            }
+        }
+
+        throw new SecurityException("User isn't authenticated\n");
     }
 
 

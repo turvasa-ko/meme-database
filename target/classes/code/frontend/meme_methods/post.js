@@ -7,21 +7,18 @@ async function addMeme() {
         let tags = document.getElementById("tags").value;
         let image = document.getElementById("memeFile").files[0];
 
-        if (title == null || tags == null || image == null) {
-            document.getElementById("buttonText").textContent = "   All above fields must have content in them.";
-        }
-
         let memeJson = JSON.stringify({
             title: title,
-            tags: tagsJson(tags.split(" "))
+            tags: getTagsJsonArray(tags.split(" "))
         })
 
-        let data = new FormData()
-            .append("meme", memeJson)
-            .append("image", image);
+        let data = new FormData();
+        data.append("meme", memeJson)
+        data.append("image", image);
 
         const response = await fetch("/api/memes", {
             method: "POST",
+            credentials: "include",
             body: data
         }) 
 
@@ -29,14 +26,14 @@ async function addMeme() {
         document.getElementById("buttonText").textContent = "   Meme added succesfully.";
         alert(result.message);
     } catch (error) {
-        document.getElementById("results").textContent = "  Unable to add the meme, please try again.";
+        document.getElementById("buttonText").textContent = "  Unable to add the meme. Please try again.";
         console.error(error);
     }
 }
 
 
 
-async function getTagsJsonArray(tags) {
+function getTagsJsonArray(tags) {
 
     let tagsJson = "[";
     let index = 1;
