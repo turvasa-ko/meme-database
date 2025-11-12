@@ -57,13 +57,11 @@ public class HttpExchangeMethods {
 
 
     /**
-    * 
+     * 
      * Gets the content of the request while cheking its validity
      * 
-     * @param  exchange HTTPS request handler
      * @param  headers HTTPS request and response headers
      * @return Request content
-     * @throws IOException
      * @throws WrongMethodTypeException Request's method type is invalid
      */
     public MultipartStream getMultipartContent(Headers headers) throws IOException {
@@ -81,17 +79,16 @@ public class HttpExchangeMethods {
         }
 
         // Get reader for stream file
-        try (InputStream inputStream = exchange.getRequestBody()) {
+        InputStream inputStream = exchange.getRequestBody();
 
-            // Get content length boundary
-            String boundary = contentType.substring(boundaryIndex + "boundary=".length()).trim();
-            if (boundary.startsWith("\"") && boundary.endsWith("\"")) {
-                boundary = boundary.substring(1, boundary.length() - 1);
-            }
-
-            // Get the stream file
-            return new MultipartStream(inputStream, boundary.getBytes(StandardCharsets.UTF_8), 4096, null);
+        // Get content length boundary
+        String boundary = contentType.substring(boundaryIndex + "boundary=".length()).trim();
+        if (boundary.startsWith("\"") && boundary.endsWith("\"")) {
+            boundary = boundary.substring(1, boundary.length() - 1);
         }
+
+        // Get the stream file
+        return new MultipartStream(inputStream, boundary.getBytes(StandardCharsets.UTF_8), 4096, null);
     }
 
 

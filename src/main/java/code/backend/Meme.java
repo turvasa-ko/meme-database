@@ -118,26 +118,6 @@ public class Meme implements Comparable<Meme> {
     }
 
 
-    /*
-    public String getTagsJsonString() {
-        JSONArray tagsArray = new JSONArray();
-
-        // Iterate the tag set
-        for (Tag tag: tags) {
-
-            // Create tag json object
-            JSONObject tagJson = new JSONObject()
-                .put("title", tag.getTitle())
-                .put("count", tag.getCount())
-            ;
-
-            // Add the tag json to the array
-            tagsArray.put(tagJson);
-        }
-        return tagsArray.toString();
-    }
-    */
-
     public Integer getID() {
         return id;
     }
@@ -147,25 +127,6 @@ public class Meme implements Comparable<Meme> {
         return likes;
     }
 
-
-
-/*
-    public void checkForNewTags(Set<Tag> allTags, Database database) throws SQLException {
-
-        // Skip iteration if all tags are already added
-        if (allTags.containsAll(tags)) {
-            return;
-        }
-
-        // Add all missing tags
-        for (Tag tag: tags) {
-            if (!allTags.contains(tag)) {
-                allTags.add(tag);
-                database.addTag(tag);
-            }
-        }
-    }
-*/
 
 
     public JSONObject toJSONString() { 
