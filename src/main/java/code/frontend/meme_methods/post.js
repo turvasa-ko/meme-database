@@ -5,13 +5,13 @@ async function addMeme() {
 
         // Get the variables
         let title = document.getElementById("title").value;
-        let tags = document.getElementById("tags").value;
+        let tags = document.getElementById("tags").value.split(" ");
         let image = document.getElementById("memeFile").files[0];
 
         // Convert variables to JSON
         let memeJson = JSON.stringify({
             title: title,
-            tags: JSON.stringify(getTagsJsonArray(tags.split(" ")))
+            tags: getTagsArray(tags)
         })
 
         // Convert meme file to FormData
@@ -41,18 +41,16 @@ async function addMeme() {
 
 
 
-function getTagsJsonArray(tags) {
-
-    let tagsJson = "[";
+function getTagsArray(tags) {
     let index = 1;
+    tagsArray = [];
 
     for (let tag of tags) {
-        tagsJson += "{title: " + tag + ", count: 0}";
-
-        if (index++ != tags.lenght) {
-            tagsJson += ", \n";
-        }
+        tagsArray.push({
+            title: tag, 
+            count: "0"
+        });
     }
 
-    return tagsJson + "]";
+    return tagsArray;
 }

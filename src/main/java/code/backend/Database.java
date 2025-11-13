@@ -40,7 +40,7 @@ public class Database {
 
         // Create users table
         String userTable =  "CREATE TABLE IF NOT EXISTS User (" +
-                                "name varchar(50) NOT NULL, " +
+                                "name varchar(50) NOT NULL UNIQUE, " +
                                 "password TEXT NOT NULL, " +
                                 "id INTEGER PRIMARY KEY AUTOINCREMENT" +
                             ")";
@@ -68,7 +68,7 @@ public class Database {
                             "FOREIGN KEY (memeId) REFERENCES Meme(id) ON DELETE CASCADE, " +
                             "UNIQUE (tagId, memeId)" +
                         ")";
-                                
+    
         // Add all tables to database
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(userTable);
@@ -340,7 +340,7 @@ public class Database {
 
         // Set SQL command
         String command =
-            "DELETE FROM Tag" +
+            "DELETE FROM Tag " +
             "WHERE title = ?"
         ;
 
@@ -364,6 +364,7 @@ public class Database {
 
     /**
      * Adds the given meme to the database, if it has unique title
+     * Also handles the tags of the meme to the database correclty 
      * 
      * @param meme Meme to be added
      * @throws IllegalArgumentException Meme don't have unique title
@@ -393,13 +394,19 @@ public class Database {
             throw e;
         }
 
+        System.out.println("Meme added");
+
         // Iterate all tags
         for (Tag tag: meme.getTagsSet()) {
             // Add tag to the database, if it's new
             addNewTag(tag);
 
+            System.out.println("tags added");
+
             // Link the meme and the tag
             addTagOfTheMeme(meme, tag);
+
+            System.out.println("links added");
         }
     }
 
@@ -486,7 +493,7 @@ public class Database {
 
         // Set SQL command
         String command = 
-            "SELECT tags, likes, id FROM memes" +
+            "SELECT tags, likes, id FROM memes " +
             "WHERE title LIKE ?"
         ;
 
@@ -534,11 +541,11 @@ public class Database {
 
         // Set SQL command
         String command = 
-            "SELECT m.title, m.likes, m.id" +
-            "FROM Meme AS m" +
-            "JOIN HasTag AS ht ON m.id = ht.memeId" +
-            "JOIN Tag AS t ON ht.tagId = t.id" +
-            "WHERE t.title IN (" + placeHolders + ")" +
+            "SELECT m.title, m.likes, m.id " +
+            "FROM Meme AS m " +
+            "JOIN HasTag AS ht ON m.id = ht.memeId " +
+            "JOIN Tag AS t ON ht.tagId = t.id " +
+            "WHERE t.title IN (" + placeHolders + ") " +
             "GROUP BY m.id"
         ;
 
@@ -608,10 +615,10 @@ public class Database {
 
         // Set SQL exception
         String command = 
-            "INSERT INTO HasTag(tagId, memeID)" + 
-            "VALUES(Tag.id, Meme.id)"+
-            "JOIN Tag" +
-            "JOIN Meme" +
+            "INSERT INTO HasTag(tagId, memeID) " + 
+            "VALUES(Tag.id, Meme.id) "+
+            "JOIN Tag " +
+            "JOIN Meme " +
             "WHERE Tag.title = ? AND Meme.title = ? AND MEME.username = ?"
         ;
 
@@ -645,8 +652,8 @@ public class Database {
 
             // Set the SQL command
             String command = 
-                "UPDATE memes" +
-                "SET title = ?" +
+                "UPDATE memes " +
+                "SET title = ? " +
                 "WHERE title = ? AND username = ?"
             ;
 
@@ -676,7 +683,7 @@ public class Database {
 
         // Set SQL command
         String command =
-            "DELETE FROM Meme" +
+            "DELETE FROM Meme " +
             "WHERE title = ? AND username = ?"
         ;
 
@@ -708,12 +715,11 @@ public class Database {
 
         // Set SQL command
         String command = 
-            "INSERT INTO Tag(tagId, memeId)" +
-            "VALUES(Tag.id, Meme.id)" +
-            "FROM Tag" +
-            "JOIN Meme" +
-            "WHERE" +
-                "Tag.title = ? AND" +
+            "INSERT INTO HasTag(tagId, memeId) " +
+            "VALUES(Tag.id, Meme.id) " +
+            "FROM Tag, Meme " +
+            "WHERE " +
+                "Tag.title = ? AND " +
                 "Meme.title = ?"
         ;
 
@@ -738,10 +744,10 @@ public class Database {
 
         // Set SQL command
         String command = 
-            "SELECT UNIQUE title" +
-            "FROM Tag" +
-            "JOIN HasTag ON Tag.id = HasTag.tagId" +
-            "JOIN Meme" + 
+            "SELECT UNIQUE title " +
+            "FROM Tag " +
+            "JOIN HasTag ON Tag.id = HasTag.tagId " +
+            "JOIN Meme " + 
             "WHERE HasTag.memeId = ?"
         ;
 
@@ -780,7 +786,7 @@ public class Database {
 
         // Set SQl command
         String command =
-            "SELECT COUNT(*) FROM HasTag" +
+            "SELECT COUNT(*) FROM HasTag " +
             "WHERE memeId = ?"
         ;
 
@@ -810,14 +816,14 @@ public class Database {
 
         // Set SQL command
         String command = 
-            "DELETE FROM HasTag" +
+            "DELETE FROM HasTag " +
             "WHERE " +
                 "tagId = (" +
-                    "SELECT id FROM Tag" +
+                    "SELECT id FROM Tag " +
                     "WHERE title = ?" +
                 ") AND " +
                 "memeId = (" +
-                    "SELECT id FROM Meme" +
+                    "SELECT id FROM Meme " +
                     "WHERE title = ?" +
                 ")"
         ;

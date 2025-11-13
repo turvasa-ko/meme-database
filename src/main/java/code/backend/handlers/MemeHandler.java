@@ -84,8 +84,6 @@ public class MemeHandler implements HttpHandler {
             Headers headers = exchange.getRequestHeaders();
             MultipartStream multipartStream = exchangeMethods.getMultipartContent(headers);
 
-            System.out.println("Valid content");
-
             // Get the meme from the content
             Meme meme = parseMultipartStream(multipartStream);
 
@@ -115,32 +113,22 @@ public class MemeHandler implements HttpHandler {
         Meme meme = null;
         boolean next = true; // multipartStream.skipPreamble();
 
-        System.out.println("Next created");
-
         while (next) {
-
-            System.out.println("Has next");
             
             // Get the data
             String headers = multipartStream.readHeaders();
-            System.out.println("Jeaders");
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             multipartStream.readBodyData(output);
-            System.out.println("body");
             byte[] data = output.toByteArray();
-
-            System.out.println("Data found");
 
             // Get meme information
             if (headers.contains("meme")) {
                 meme = new Meme(getMemeJson(data));
-                System.out.println("Meme info found");
             }
 
             // Get the meme file and save it
             else if (headers.contains("image")) {
                 saveMemeFile(data, meme);
-                System.out.println("Image saved");
             }
 
             next = multipartStream.readBoundary();

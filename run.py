@@ -85,7 +85,7 @@ def kill_processes():
 
 if __name__ == "__main__":
     #launch_backend()
-    sleep(3)
+    #sleep(3)
     launch_frontend()
     sleep(2)
     launch_electron()
