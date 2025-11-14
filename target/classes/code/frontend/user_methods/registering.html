@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <title>
+            Register
+        </title>
+        <link rel="stylesheet" href="style.css">
+        <script src="registering.js"></script>
+    </head>
+
+    <body>
+        <h1>
+            Meme Database
+        </h1>
+
+        <!-- Buttons -->
+        <a href="../index.html"><button>Home</button></a>
+        <a href="login.html"><button>Login</button></a>
+        <br>
+
+        <!-- Registration form -->
+        <div>
+            Username: <input type="text" id="username" required>
+                <span id="usernameException"></span><br>
+
+            Password: <input type="password" id="password" required>
+                <span id="passwordException"></span><br>
+
+            <button type="button" onclick="registerUser()">Register</button>
+                <span id="result"></span>
+        </div>
+    </body>
+
+</html>

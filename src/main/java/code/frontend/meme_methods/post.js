@@ -1,7 +1,6 @@
 
 async function addMeme() {
     try {
-        document.getElementById("buttonText").textContent = "   Adding..."
 
         // Get the variables
         let title = document.getElementById("title").value.trim();
@@ -9,11 +8,9 @@ async function addMeme() {
         let image = document.getElementById("memeFile").files[0];
 
         // Check variables validity
-        let regex = new RefExp("[\w-]", "gi");
-        checkTitleValidity(title, regex);
-        checkTagsValidity(tags, regex);
+        checkTitleValidity(title);
+        checkTagsValidity(tags);
         checkFileValidity(file);
-
 
         // Convert variables to JSON
         let memeJson = JSON.stringify({
@@ -34,28 +31,33 @@ async function addMeme() {
         };
 
         // Send the POST request
+        document.getElementById("result").textContent = "   Adding..."
         const response = await fetch("/api/memes", content);
+        infromUser(response);
 
-        /// Get results
-        const result = await response.json();
-        document.getElementById("buttonText").textContent = "Meme added succesfully.";
-        alert(result.message);
+        // Console output
+        console.log(response);
     } 
     
     catch (error) {
+
+        // Invalid meme title
         if (error.includes("Invalid title")) {
             document.getElementById("titleException").textContent = error;
         }
 
+        // Invalid tag title
         else if (error.includes("Invalid tag")) {
             document.getElementById("tagsException").textContent = error;
         }
 
+        // invalid file format
         else if (error.includes("Invalid file")) {
             document.getElementById("fileException").textContent = error;
         }
 
-        else document.getElementById("buttonText").textContent = "Unable to add the meme. Please try again.";
+        // Other errors
+        else document.getElementById("result").textContent = "Unable to add the meme. Please try again.";
 
         console.error(error);
     }
@@ -64,8 +66,7 @@ async function addMeme() {
 
 
 function getTagsArray(tags) {
-    let index = 1;
-    tagsArray = [];
+    let tagsArray = [];
 
     for (let tag of tags) {
         tagsArray.push({
@@ -79,11 +80,12 @@ function getTagsArray(tags) {
 
 
 
-function checkTitleValidity(title, regex) {
+function checkTitleValidity(title) {
+    let regex = "/^[\w-]{3-30}$/";
 
     // Check length
-    if (title.length > 50) {
-        throw "Invalid title: length can't exceed 30 chars.";
+    if (title.length > 30 || title.length < 3) {
+        throw "Invalid title: length must be 3-30 chars.";
     }
 
     // Match for regex
@@ -102,7 +104,12 @@ function checkTitleValidity(title, regex) {
 }
 
 
-function checkTagsValidity(tags, regex) {
+function checkTagsValidity(tags) {
+    let regex = "/^[/w-]{1,20}$/"
+
+    if (tags.length < 1) {
+        throw "Invalid tag: at least 1 take must be given."
+    }
 
     // Iterate all tags
     for (let tag of tags) {
@@ -129,6 +136,25 @@ function checkFileValidity(file) {
 
     // Check file validity
     if (!allowedExtensions.exec(file.value)) {
-        throw "Invalid file: must be .jpg, .jpeg, .png or .gif"
+        throw "Invalid file format: must be .jpg, .jpeg, .png or .gif"
+    }
+}
+
+
+function infromUser(response) {
+
+    // Success
+    if (response.ok) {
+        document.getElementById("result").textContent = "Meme added succesfully.";
+    }
+
+    // Unauthorized user
+    else if (response.status = 401) {
+        document.getElementById("result").textContent = "You have to login before adding memes."
+    }
+
+    // Other exceptions
+    else {
+        document.getElementById("result").textContent = "Unable to add the meme. Please try again.";
     }
 }

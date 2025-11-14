@@ -9,13 +9,11 @@ import java.io.InputStream;
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
 
 import org.apache.commons.fileupload.MultipartStream;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -58,8 +56,12 @@ public class MemeHandler implements HttpHandler {
 
                 case "DELETE" -> deleteRequest(exchange, exchangeMethods, username);
                 
-                default -> exchangeMethods.errorResponse(405, ": Unsupported post method\n");
+                default -> exchangeMethods.errorResponse(405, "Unsupported post method\n");
             }
+        }
+
+        catch (SecurityException e) {
+            exchangeMethods.errorResponse(401, e.getMessage());
         }
 
         catch (Exception e) {

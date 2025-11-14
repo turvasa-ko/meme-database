@@ -15,22 +15,18 @@
         </h1>
 
         <!-- Buttons -->
-        <a href="../index.html"><button>Home Page</button></a>
+        <a href="../index.html"><button>Home</button></a>
+        <a href="registering.html"><button>Register</button></a>
 
         <!-- Login form -->
-        <form id="loginForm">
-            <label>
-                Username: <input type="text" id="username" required>
-            </label>
-            <label>
-                Password: <input type="text" id="password" required>
-            </label>
+        <div>
+            Username: <input type="text" id="username" required><br>
+
+            Password: <input type="password" id="password" required><br>
+            
             <button type="button" onclick="validateUser()">Login</button>
-        </form>
-
-        <!-- Results -->
-        <pre id="result"></pre>
-
+                <span id="result"></span>
+        </div>
     </body>
 
 </html>

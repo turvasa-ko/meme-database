@@ -6,6 +6,7 @@
             Meme Database
         </title>
         <link rel="stylesheet" href="search.css">
+        <script src="search.js"></script>
     </head>
 
     <body>
@@ -13,13 +14,12 @@
             Meme Searcher
         </h1>
 
-        <a href="index.html">Home Page</a>
+        <a href="../index.html">Home Page</a>
 
         <!-- Inputs -->
         <div>
-            <input id="title" placeholder="Meme Title">
-            <input id="tags" placeholder="Tags (white space separator)">
-            <input id="id" placeholder="Meme ID">
+            <input id="querry" placeholder="Search Memes">
+            <span id="querryException"></span>
             
             <!-- Dropdown sorting type menu -->
             <div class="dropdown">
@@ -32,15 +32,15 @@
                     <button onclick="setSort('likes')">Most Liked</button>
                     <button onclick="setSort('reverse_likes')">Least Liked</button>
                 </div>
-                </div>
-            </div>
+            </div><br>
 
-            <button onclick="searchMeme()"><button>Search</button>
+            <button onclick="searchMemes()"><button>Search</button>
+            <span id="result"></span>
         </div>
 
-        <p id="searchResults">Memes</p>
-
-        <script src="search.js"></script>
+        <script>
+            getMemes()
+        </script>
     </body>
 
 </html>

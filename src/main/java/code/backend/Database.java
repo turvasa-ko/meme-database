@@ -40,8 +40,8 @@ public class Database {
 
         // Create users table
         String userTable =  "CREATE TABLE IF NOT EXISTS User (" +
-                                "name varchar(30) NOT NULL UNIQUE, " +
-                                "password TEXT NOT NULL, " +
+                                "name varchar(20) NOT NULL UNIQUE, " +
+                                "password varchar(20) NOT NULL, " +
                                 "id INTEGER PRIMARY KEY AUTOINCREMENT" +
                             ")";
 
@@ -55,7 +55,7 @@ public class Database {
         String memesTable =  "CREATE TABLE IF NOT EXISTS Meme (" +
                                 "title VARCHAR(30) NOT NULL UNIQUE, " +
                                 "likes INTEGER NOT NULL, " +
-                                "username VARCHAR(30) NOT NULL, " +
+                                "username VARCHAR(20) NOT NULL, " +
                                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                                 "FOREIGN KEY (username) REFERENCES User(name)" +
                              ")";

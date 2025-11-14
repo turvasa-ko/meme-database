@@ -14,29 +14,26 @@
             Post Memes
         </h1>
 
-        <a href="../index.html">Home Page</a>
+        <!-- Buttons -->
+        <a href="../index.html"><button>Home</button></a>
+        <a href="../user_methods/login.html"><button>Login</button></a><br>
 
         <!-- Inputs -->
-        <form action="addMeme">
+        <div>
             Title: <input id="title" type="text" required>
             <span id="titleException"></span><br>
 
-            Tags: <input id="tags" type="text" required><span> - Use white space as separator</span>
+            Tags: <input id="tags" type="text" placeholder="White space separator" required></label>
             <span id="tagsException"></span><br>
 
             File: <input id="memeFile" type="file" name="meme" required>
             <span id="fileExcpetion"></span><br><br>
 
             <button type="button" onclick="addMeme()">Add Meme</button>
-            <span id="buttonText"></span>
-        </form>
+            <span id="result"></span>
+        </div>
 
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-
-        <form action="">
-
-        </form>
-
     </body>
 
 </html>

@@ -78,7 +78,7 @@ public class MemeSearchHandler implements HttpHandler {
             // Get search details from the query
             String[] variables = getVariables(exchange);
             String sortingQuerry = variables[0].toLowerCase();
-            SORT_TYPE sortingType = getMemeSortType(variables[2]);
+            SORT_TYPE sortingType = getMemeSortType(variables[1]);
 
             // Corresponding memes array
             JSONArray memePaths = filterMemes(exchange, sortingQuerry, sortingType);
@@ -116,7 +116,7 @@ public class MemeSearchHandler implements HttpHandler {
      */
     private String[] getVariables(HttpExchange exchange) {
 
-        String[] variableValues = {null, null, null};
+        String[] variableValues = {null, null};
 
         // Get the query
         URI uri = exchange.getRequestURI();
@@ -145,7 +145,7 @@ public class MemeSearchHandler implements HttpHandler {
             switch (keyValue[0]) {
 
                 // Search querry
-                case "searc_querry" -> variableValues[0] = setVariable(keyValue);
+                case "search_querry" -> variableValues[0] = setVariable(keyValue);
 
                 // Sorting type
                 case "sorting_type" -> variableValues[1] = setVariable(keyValue);
