@@ -478,16 +478,16 @@ public class Database {
     /**
      * Gets memes with titles containing the given title
      * 
-     * @param title Title of a meme
+     * @param queryTitle Title of a meme
      * @return Founded memes list
      * @throws IllegalArgumentException If no memes are found
      */
-    public List<Meme> getMemesContainingTitle(String title) throws SQLException {
+    public List<Meme> getMemesContainingTitle(String queryTitle) throws SQLException {
         List<Meme> memeList = new ArrayList<>();
 
         // Set SQL command
         String command = 
-            "SELECT tags, likes, id FROM memes " +
+            "SELECT title, likes, id FROM Meme " +
             "WHERE title LIKE ?"
         ;
 
@@ -495,17 +495,18 @@ public class Database {
         try (PreparedStatement statement = connection.prepareStatement(command)) {
 
             // Search memes containing the title
-            title = "%" + title + "%";
-            statement.setString(1, title);
+            queryTitle = "%" + queryTitle + "%";
+            statement.setString(1, queryTitle);
             try (ResultSet memes = statement.executeQuery()) {
 
                 // Iterate all memes
                 while (memes.next()) {
 
                     // Create meme
-                    JSONArray tags = new JSONArray(memes.getString("tags"));
+                    String title = memes.getString("title");
                     int likes = memes.getInt("likes");
                     int id = memes.getInt("id");
+                    JSONArray tags = getMemeTags(id);
                     memeList.add(new Meme(title, tags, id, likes));
                 }
             }
@@ -646,7 +647,7 @@ public class Database {
 
             // Set the SQL command
             String command = 
-                "UPDATE memes " +
+                "UPDATE Meme " +
                 "SET title = ? " +
                 "WHERE title = ? AND username = ?"
             ;
@@ -736,8 +737,6 @@ public class Database {
      */
     private JSONArray getMemeTags(int memeId) throws SQLException {
         JSONArray tags = new JSONArray();
-
-        System.out.println("shrek");
 
         // Set SQL command
         String command = 

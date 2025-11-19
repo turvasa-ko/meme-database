@@ -9,7 +9,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.awt.image.BufferedImage;
 
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
 import org.json.JSONArray;
@@ -49,7 +51,7 @@ public class MemeSearchHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        HttpExchangeMethods exchangeMethods = new HttpExchangeMethods(exchange, "[ERROR] - SEARCH");
+        HttpExchangeMethods exchangeMethods = new HttpExchangeMethods(exchange, "[ERROR] - SEARCH: ");
 
         try (exchange) {
             String method = exchange.getRequestMethod().toUpperCase();
@@ -204,7 +206,7 @@ public class MemeSearchHandler implements HttpHandler {
 
 
 
-    private JSONArray filterMemes(HttpExchange exchange, String sortingQuerry, SORT_TYPE sortingType) throws SQLException {
+    private JSONArray filterMemes(HttpExchange exchange, String sortingQuerry, SORT_TYPE sortingType) throws SQLException, IOException {
         List<Meme> filteredMemes = new ArrayList<>();
 
         // Querry is valid ID
@@ -278,7 +280,7 @@ public class MemeSearchHandler implements HttpHandler {
 
 
 
-    private JSONArray sortedMemeArray(HttpExchange exchange, List<Meme> filteredMemes, SORT_TYPE sortingType) {
+    private JSONArray sortedMemeArray(HttpExchange exchange, List<Meme> filteredMemes, SORT_TYPE sortingType) throws IOException {
 
         if (filteredMemes.isEmpty()) {
             return new JSONArray();
@@ -339,11 +341,15 @@ public class MemeSearchHandler implements HttpHandler {
     }
 
 
-    private int[] getMemeSizes(String path) {
-        ImageIcon meme = new ImageIcon(path);
+    private int[] getMemeSizes(String path) throws IOException {
+        String imagePath = path.replace("/api/meme/dir/", System.clearProperty("user.dir") + "/memes/");
+
+        System.out.println(imagePath);
+
+        BufferedImage meme = ImageIO.read(new File(imagePath));
         int[] size = {0, 0};
-        size[0] = meme.getIconWidth();
-        size[1] = meme.getIconHeight();
+        size[0] = meme.getWidth();
+        size[1] = meme.getHeight();
 
         return size;
     }

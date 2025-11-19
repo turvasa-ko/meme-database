@@ -16,7 +16,7 @@ public class Meme implements Comparable<Meme> {
     private Integer id;
     private Integer likes;
 
-    private static final String ERROR_MESSAGE = "-MEME:";
+    private static final String ERROR_MESSAGE = "-MEME: ";
 
 
 
